@@ -4,6 +4,8 @@ import (
 	"flag"
 	"io"
 	"net/http"
+	"net/url"
+	"os"
 	"strconv"
 	"time"
 
@@ -16,17 +18,18 @@ var (
 	baseURL = flag.String("b", "http://localhost:8080", "base url")
 )
 
-func readRequestBody(r *http.Request) string {
+func readRequestBody(r *http.Request) (string, error) {
 	body, err := io.ReadAll(r.Body)
-	// FIXME: better error handle
 	if err != nil {
-		return ""
+		return "", err
 	}
 	defer r.Body.Close()
-	return string(body)
+	if _, err = url.Parse(string(body)); err != nil {
+		panic("invalid url")
+	}
+	return string(body), nil
 }
 
-// FIXME: better key
 func makeKey() string {
 	timestamp := strconv.FormatInt(time.Now().UnixNano(), 10)
 	return timestamp[len(timestamp)-8:]
@@ -34,7 +37,12 @@ func makeKey() string {
 
 func handleShortLinkCreation(w http.ResponseWriter, r *http.Request) {
 	key := makeKey()
-	storage[key] = readRequestBody(r)
+	reqBody, err := readRequestBody(r)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	storage[key] = reqBody
 	shortURL := *baseURL + "/" + key
 	w.WriteHeader(http.StatusCreated)
 	w.Write([]byte(shortURL))
@@ -53,6 +61,12 @@ func handleRedirection(w http.ResponseWriter, r *http.Request) {
 
 func main() {
 	flag.Parse()
+	if envAddress, ok := os.LookupEnv("SERVER_ADDRESS"); ok {
+		*address = envAddress
+	}
+	if envBaseURL, ok := os.LookupEnv("BASE_URL"); ok {
+		*baseURL = envBaseURL
+	}
 	r := chi.NewRouter()
 	r.Post("/", handleShortLinkCreation)
 	r.Get("/{key}", handleRedirection)
