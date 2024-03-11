@@ -3,9 +3,10 @@ package main
 import (
 	"io"
 	"net/http"
-	"regexp"
 	"strconv"
 	"time"
+
+	"github.com/go-chi/chi/v5"
 )
 
 const HOST = "http://localhost"
@@ -38,7 +39,8 @@ func handleShortLinkCreation(w http.ResponseWriter, r *http.Request) {
 }
 
 func handleRedirection(w http.ResponseWriter, r *http.Request) {
-	originalURL, ok := shortURLStorage[r.URL.Path[1:]]
+	key := chi.URLParam(r, "key")
+	originalURL, ok := shortURLStorage[key]
 	if !ok {
 		w.WriteHeader(http.StatusNotFound)
 		return
@@ -47,23 +49,10 @@ func handleRedirection(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusTemporaryRedirect)
 }
 
-func handleRequest(w http.ResponseWriter, r *http.Request) {
-	re := regexp.MustCompile(`^/\w{8}$`)
-	if r.Method == http.MethodGet && re.MatchString(r.URL.Path) {
-		handleRedirection(w, r)
-		return
-	}
-	if r.Method == http.MethodPost && r.URL.Path == "/" {
-		handleShortLinkCreation(w, r)
-		return
-	}
-
-	w.WriteHeader(http.StatusNotFound)
-}
-
 func main() {
 	shortURLStorage = make(map[string]string)
-	mux := http.NewServeMux()
-	mux.HandleFunc("/", handleRequest)
-	http.ListenAndServe(":"+PORT, mux)
+	r := chi.NewRouter()
+	r.Post("/", handleShortLinkCreation)
+	r.Get("/{key}", handleRedirection)
+	http.ListenAndServe(":"+PORT, r)
 }

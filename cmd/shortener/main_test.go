@@ -1,12 +1,14 @@
 package main
 
 import (
+	"context"
 	"io"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
 
+	"github.com/go-chi/chi/v5"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -34,7 +36,10 @@ func TestHandleRedirection(t *testing.T) {
 		originalURL := "https://ya.ru"
 		shortURLStorage[key] = originalURL
 		recorder := httptest.NewRecorder()
-		request := httptest.NewRequest(http.MethodGet, "/"+key, nil)
+		request := httptest.NewRequest(http.MethodGet, "/{key}", nil)
+		rctx := chi.NewRouteContext()
+		rctx.URLParams.Add("key", key)
+		request = request.WithContext(context.WithValue(request.Context(), chi.RouteCtxKey, rctx))
 
 		handleRedirection(recorder, request)
 		result := recorder.Result()
