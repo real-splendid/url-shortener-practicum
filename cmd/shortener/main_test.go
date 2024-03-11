@@ -13,7 +13,6 @@ import (
 )
 
 func TestHandleShortLinkCreation(t *testing.T) {
-	shortURLStorage = make(map[string]string)
 	t.Run("create-short-link", func(t *testing.T) {
 		recorder := httptest.NewRecorder()
 		request := httptest.NewRequest(http.MethodPost, "/", strings.NewReader("https://ya.ru"))
@@ -30,11 +29,10 @@ func TestHandleShortLinkCreation(t *testing.T) {
 }
 
 func TestHandleRedirection(t *testing.T) {
-	shortURLStorage = make(map[string]string)
 	t.Run("redirect", func(t *testing.T) {
 		key := "testtest"
 		originalURL := "https://ya.ru"
-		shortURLStorage[key] = originalURL
+		storage[key] = originalURL
 		recorder := httptest.NewRecorder()
 		request := httptest.NewRequest(http.MethodGet, "/{key}", nil)
 		rctx := chi.NewRouteContext()

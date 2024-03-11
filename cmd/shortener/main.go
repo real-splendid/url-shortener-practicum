@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"io"
 	"net/http"
 	"strconv"
@@ -9,10 +10,11 @@ import (
 	"github.com/go-chi/chi/v5"
 )
 
-const HOST = "http://localhost"
-const PORT = "8080"
-
-var shortURLStorage map[string]string
+var (
+	storage = make(map[string]string)
+	address = flag.String("a", ":8080", "server address")
+	baseURL = flag.String("b", "http://localhost:8080", "base url")
+)
 
 func readRequestBody(r *http.Request) string {
 	body, err := io.ReadAll(r.Body)
@@ -32,17 +34,17 @@ func makeKey() string {
 
 func handleShortLinkCreation(w http.ResponseWriter, r *http.Request) {
 	key := makeKey()
-	shortURLStorage[key] = readRequestBody(r)
+	storage[key] = readRequestBody(r)
+	shortURL := *baseURL + "/" + key
 	w.WriteHeader(http.StatusCreated)
-	shortURL := HOST + ":" + PORT + "/" + key
 	w.Write([]byte(shortURL))
 }
 
 func handleRedirection(w http.ResponseWriter, r *http.Request) {
 	key := chi.URLParam(r, "key")
-	originalURL, ok := shortURLStorage[key]
+	originalURL, ok := storage[key]
 	if !ok {
-		w.WriteHeader(http.StatusNotFound)
+		http.Error(w, "Not Found", http.StatusNotFound)
 		return
 	}
 	w.Header().Set("Location", originalURL)
@@ -50,9 +52,12 @@ func handleRedirection(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
-	shortURLStorage = make(map[string]string)
+	flag.Parse()
 	r := chi.NewRouter()
 	r.Post("/", handleShortLinkCreation)
 	r.Get("/{key}", handleRedirection)
-	http.ListenAndServe(":"+PORT, r)
+	err := http.ListenAndServe(*address, r)
+	if err != nil {
+		panic(err)
+	}
 }
