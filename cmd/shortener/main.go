@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"flag"
 	"io"
 	"net/http"
@@ -25,6 +26,14 @@ type (
 		http.ResponseWriter
 		status int
 		size   int
+	}
+
+	ShortenReq struct {
+		URL string `json:"url"`
+	}
+
+	ShortenResp struct {
+		Result string `json:"result"`
 	}
 )
 
@@ -51,16 +60,34 @@ func readRequestBody(r *http.Request) (string, error) {
 	}
 	defer r.Body.Close()
 	if _, err = url.Parse(string(body)); err != nil {
-		panic("invalid url")
+		return "", err
 	}
 	return string(body), nil
+}
+
+func readURLFromAPIRequestBody(r *http.Request) (string, error) {
+	body, err := io.ReadAll(r.Body)
+	if err != nil {
+		return "", err
+	}
+	defer r.Body.Close()
+
+	var req ShortenReq
+	if err = json.Unmarshal(body, &req); err != nil {
+		return "", err
+	}
+
+	if _, err = url.Parse(req.URL); err != nil {
+		return "", err
+	}
+	return req.URL, nil
 }
 
 func makeKey() string {
 	return strconv.FormatInt(time.Now().UnixNano(), 36)
 }
 
-func handleShortLinkCreation(w http.ResponseWriter, r *http.Request) {
+func handleShorten(w http.ResponseWriter, r *http.Request) {
 	key := makeKey()
 	reqBody, err := readRequestBody(r)
 	if err != nil {
@@ -71,6 +98,21 @@ func handleShortLinkCreation(w http.ResponseWriter, r *http.Request) {
 	shortURL := *baseURL + "/" + key
 	w.WriteHeader(http.StatusCreated)
 	w.Write([]byte(shortURL))
+}
+
+func handleAPIShorten(w http.ResponseWriter, r *http.Request) {
+	key := makeKey()
+	URL, err := readURLFromAPIRequestBody(r)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	storage[key] = URL
+	shortURL := *baseURL + "/" + key
+	jsonResp, _ := json.Marshal(ShortenResp{Result: shortURL})
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusCreated)
+	w.Write(jsonResp)
 }
 
 func handleRedirection(w http.ResponseWriter, r *http.Request) {
@@ -109,10 +151,10 @@ func main() {
 	}
 	r := chi.NewRouter()
 	r.Use(loggingMiddleware)
-	r.Post("/", handleShortLinkCreation)
+	r.Post("/", handleShorten)
+	r.Post("/api/shorten", handleAPIShorten)
 	r.Get("/{key}", handleRedirection)
-	err := http.ListenAndServe(*address, r)
-	if err != nil {
+	if err := http.ListenAndServe(*address, r); err != nil {
 		panic(err)
 	}
 	logger.Sync()
