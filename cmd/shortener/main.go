@@ -10,13 +10,39 @@ import (
 	"time"
 
 	"github.com/go-chi/chi/v5"
+	"go.uber.org/zap"
 )
 
 var (
 	storage = make(map[string]string)
 	address = flag.String("a", ":8080", "server address")
 	baseURL = flag.String("b", "http://localhost:8080", "base url")
+	logger  *zap.SugaredLogger
 )
+
+type (
+	loggingResponseWriter struct {
+		http.ResponseWriter
+		status int
+		size   int
+	}
+)
+
+func (r *loggingResponseWriter) Write(b []byte) (int, error) {
+	size, err := r.ResponseWriter.Write(b)
+	r.size += size
+	return size, err
+}
+
+func (r *loggingResponseWriter) WriteHeader(statusCode int) {
+	r.ResponseWriter.WriteHeader(statusCode)
+	r.status = statusCode
+}
+
+func init() {
+	rawLogger, _ := zap.NewDevelopment()
+	logger = rawLogger.Sugar()
+}
 
 func readRequestBody(r *http.Request) (string, error) {
 	body, err := io.ReadAll(r.Body)
@@ -31,8 +57,7 @@ func readRequestBody(r *http.Request) (string, error) {
 }
 
 func makeKey() string {
-	timestamp := strconv.FormatInt(time.Now().UnixNano(), 10)
-	return timestamp[len(timestamp)-8:]
+	return strconv.FormatInt(time.Now().UnixNano(), 36)
 }
 
 func handleShortLinkCreation(w http.ResponseWriter, r *http.Request) {
@@ -59,6 +84,21 @@ func handleRedirection(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusTemporaryRedirect)
 }
 
+func loggingMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		start := time.Now()
+		lw := &loggingResponseWriter{ResponseWriter: w}
+		next.ServeHTTP(lw, r)
+		logger.Infow("request processed",
+			"uri", r.RequestURI,
+			"method", r.Method,
+			"duration", time.Since(start),
+			"status", lw.status,
+			"size", lw.size,
+		)
+	})
+}
+
 func main() {
 	flag.Parse()
 	if envAddress, ok := os.LookupEnv("SERVER_ADDRESS"); ok {
@@ -68,10 +108,12 @@ func main() {
 		*baseURL = envBaseURL
 	}
 	r := chi.NewRouter()
+	r.Use(loggingMiddleware)
 	r.Post("/", handleShortLinkCreation)
 	r.Get("/{key}", handleRedirection)
 	err := http.ListenAndServe(*address, r)
 	if err != nil {
 		panic(err)
 	}
+	logger.Sync()
 }

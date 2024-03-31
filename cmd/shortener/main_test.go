@@ -24,7 +24,7 @@ func TestHandleShortLinkCreation(t *testing.T) {
 
 		assert.Equal(t, http.StatusCreated, result.StatusCode)
 		assert.NoError(t, err)
-		assert.Regexp(t, "http://[^/]+/\\w{8}$", string(body))
+		assert.Regexp(t, "http://[^/]+/\\w{12}$", string(body))
 	})
 }
 
