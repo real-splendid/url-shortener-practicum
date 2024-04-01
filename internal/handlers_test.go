@@ -13,6 +13,11 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func TestMain(m *testing.M) {
+	SetStorage(NewMemoryStorage())
+	m.Run()
+}
+
 func TestHandleShorten(t *testing.T) {
 	t.Run("create-short-link", func(t *testing.T) {
 		recorder := httptest.NewRecorder()
@@ -56,7 +61,7 @@ func TestHandleRedirection(t *testing.T) {
 	t.Run("redirect", func(t *testing.T) {
 		key := "testtest"
 		originalURL := "https://ya.ru"
-		Storage[key] = originalURL
+		internalStorage.Set(key, originalURL)
 		recorder := httptest.NewRecorder()
 		request := httptest.NewRequest(http.MethodGet, "/{key}", nil)
 		rctx := chi.NewRouteContext()

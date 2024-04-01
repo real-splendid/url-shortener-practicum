@@ -2,29 +2,17 @@ package internal
 
 import (
 	"compress/gzip"
-	"go.uber.org/zap"
 	"io"
 	"net/http"
 	"strings"
 	"time"
 )
 
-var (
-	Logger *zap.SugaredLogger
-)
-
-type (
-	loggingResponseWriter struct {
-		http.ResponseWriter
-		status int
-		size   int
-	}
-
-	gzipWriter struct {
-		http.ResponseWriter
-		Writer io.Writer
-	}
-)
+type loggingResponseWriter struct {
+	http.ResponseWriter
+	status int
+	size   int
+}
 
 func (r *loggingResponseWriter) Write(b []byte) (int, error) {
 	size, err := r.ResponseWriter.Write(b)
@@ -35,6 +23,11 @@ func (r *loggingResponseWriter) Write(b []byte) (int, error) {
 func (r *loggingResponseWriter) WriteHeader(statusCode int) {
 	r.ResponseWriter.WriteHeader(statusCode)
 	r.status = statusCode
+}
+
+type gzipWriter struct {
+	http.ResponseWriter
+	Writer io.Writer
 }
 
 func (w gzipWriter) Write(b []byte) (int, error) {

@@ -7,15 +7,6 @@ import (
 	"github.com/go-chi/chi/v5"
 )
 
-const (
-	DefaultBaseURL = "http://localhost:8080"
-)
-
-var (
-	Storage = make(map[string]string)
-	BaseURL *string
-)
-
 type (
 	ShortenReq struct {
 		URL string `json:"url"`
@@ -26,11 +17,6 @@ type (
 	}
 )
 
-func init() {
-	baseURL := DefaultBaseURL
-	BaseURL = &baseURL
-}
-
 func HandleShorten(w http.ResponseWriter, r *http.Request) {
 	key := makeKey()
 	reqBody, err := readRequestBody(r)
@@ -38,7 +24,7 @@ func HandleShorten(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
-	Storage[key] = reqBody
+	internalStorage.Set(key, reqBody)
 	shortURL := *BaseURL + "/" + key
 	w.WriteHeader(http.StatusCreated)
 	w.Write([]byte(shortURL))
@@ -51,7 +37,7 @@ func HandleAPIShorten(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
-	Storage[key] = URL
+	internalStorage.Set(key, URL)
 	shortURL := *BaseURL + "/" + key
 	jsonResp, _ := json.Marshal(ShortenResp{Result: shortURL})
 	w.Header().Set("Content-Type", "application/json")
@@ -61,8 +47,8 @@ func HandleAPIShorten(w http.ResponseWriter, r *http.Request) {
 
 func HandleRedirection(w http.ResponseWriter, r *http.Request) {
 	key := chi.URLParam(r, "key")
-	originalURL, ok := Storage[key]
-	if !ok {
+	originalURL, err := internalStorage.Get(key)
+	if err != nil {
 		http.Error(w, "Not Found", http.StatusNotFound)
 		return
 	}
