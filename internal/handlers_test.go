@@ -1,4 +1,4 @@
-package main
+package internal
 
 import (
 	"context"
@@ -18,7 +18,7 @@ func TestHandleShorten(t *testing.T) {
 		recorder := httptest.NewRecorder()
 		request := httptest.NewRequest(http.MethodPost, "/", strings.NewReader("https://ya.ru"))
 
-		handleShorten(recorder, request)
+		HandleShorten(recorder, request)
 		result := recorder.Result()
 		body, err := io.ReadAll(result.Body)
 		defer result.Body.Close()
@@ -36,7 +36,7 @@ func TestHandleAPIShorten(t *testing.T) {
 		assert.NoError(t, err)
 		req := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(string(reqBody)))
 
-		handleAPIShorten(recorder, req)
+		HandleAPIShorten(recorder, req)
 		result := recorder.Result()
 		body, err := io.ReadAll(result.Body)
 		assert.NoError(t, err)
@@ -56,14 +56,14 @@ func TestHandleRedirection(t *testing.T) {
 	t.Run("redirect", func(t *testing.T) {
 		key := "testtest"
 		originalURL := "https://ya.ru"
-		storage[key] = originalURL
+		Storage[key] = originalURL
 		recorder := httptest.NewRecorder()
 		request := httptest.NewRequest(http.MethodGet, "/{key}", nil)
 		rctx := chi.NewRouteContext()
 		rctx.URLParams.Add("key", key)
 		request = request.WithContext(context.WithValue(request.Context(), chi.RouteCtxKey, rctx))
 
-		handleRedirection(recorder, request)
+		HandleRedirection(recorder, request)
 		result := recorder.Result()
 		defer result.Body.Close()
 
@@ -74,7 +74,7 @@ func TestHandleRedirection(t *testing.T) {
 		recorder := httptest.NewRecorder()
 		request := httptest.NewRequest(http.MethodGet, "/notfound", nil)
 
-		handleRedirection(recorder, request)
+		HandleRedirection(recorder, request)
 		result := recorder.Result()
 		defer result.Body.Close()
 
