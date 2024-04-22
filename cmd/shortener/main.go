@@ -4,8 +4,11 @@ import (
 	"flag"
 	"os"
 
+	"github.com/real-splendid/url-shortener-practicum/internal"
 	"github.com/real-splendid/url-shortener-practicum/internal/app"
 	"github.com/real-splendid/url-shortener-practicum/internal/storage"
+
+	"go.uber.org/zap"
 )
 
 var (
@@ -36,9 +39,25 @@ func init() {
 }
 
 func main() {
-	s, _ := storage.NewFileStorage(*fileStoragePath)
+	rawLogger, _ := zap.NewDevelopment()
+	logger := rawLogger.Sugar()
+	var err error
+	var s internal.Storage
+	if *dDSN != "" {
+		s, err = storage.NewPostgresStorage(*dDSN)
+		if err != nil {
+			logger.Fatalf("Failed to connect to PostgreSQL: %v", err)
+		}
+	} else if *fileStoragePath != "" {
+		s, err = storage.NewFileStorage(*fileStoragePath)
+		if err != nil {
+			logger.Fatalf("Failed to create file storage: %v", err)
+		}
+	} else {
+		s = storage.NewMemoryStorage()
+	}
 	defer s.Close()
 
-	app := app.NewApp(s, *baseURL, *dDSN)
+	app := app.NewApp(s, logger, *baseURL, *dDSN)
 	app.Serve(address)
 }

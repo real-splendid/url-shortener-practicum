@@ -17,9 +17,7 @@ type app struct {
 	baseURL string
 }
 
-func NewApp(storage internal.Storage, baseURL string, dDSN string) *app {
-	rawLogger, _ := zap.NewDevelopment()
-	logger := rawLogger.Sugar()
+func NewApp(storage internal.Storage, logger *zap.SugaredLogger, baseURL string, dDSN string) *app {
 	router := chi.NewRouter()
 	router.Use(middleware.MakeLogMiddleware(logger))
 	router.Use(middleware.MakeGzipMiddleware(logger))
