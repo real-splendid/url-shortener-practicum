@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
+	"errors"
 	"io"
 	"net/http"
 	"net/url"
@@ -29,7 +30,21 @@ func MakeAPIShortenHandler(storage internal.Storage, logger *zap.SugaredLogger, 
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
-		storage.Set(key, URL)
+		duplicateKey, err := storage.Set(key, URL)
+		if errors.Is(err, internal.ErrDuplicateKey) {
+			logger.Info("key already exists", duplicateKey)
+			shortURL := baseURL + "/" + duplicateKey
+			jsonResp, err := json.Marshal(ShortenResp{Result: shortURL})
+			if err != nil {
+				logger.Error(err)
+				w.WriteHeader(http.StatusInternalServerError)
+				return
+			}
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusConflict)
+			w.Write(jsonResp)
+			return
+		}
 		shortURL := baseURL + "/" + key
 		jsonResp, err := json.Marshal(ShortenResp{Result: shortURL})
 		if err != nil {

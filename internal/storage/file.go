@@ -46,7 +46,7 @@ func (s *fileStorage) Close() error {
 	return s.file.Close()
 }
 
-func (s *fileStorage) Set(key string, value string) error {
+func (s *fileStorage) Set(key string, value string) (string, error) {
 	rr := ResultRecord{
 		UUID:        strconv.Itoa(len(s.data) + 1),
 		ShortURL:    key,
@@ -54,13 +54,13 @@ func (s *fileStorage) Set(key string, value string) error {
 	}
 	jsonBytes, err := json.Marshal(rr)
 	if err != nil {
-		return err
+		return "", err
 	}
 	s.file.Write(jsonBytes)
 	s.file.Write([]byte("\n"))
 
 	s.data[key] = value
-	return nil
+	return "", nil
 }
 
 func (s *fileStorage) Get(key string) (string, error) {

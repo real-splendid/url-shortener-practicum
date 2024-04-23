@@ -48,7 +48,7 @@ func MakeAPIShortenBatchHandler(storage internal.Storage, logger *zap.SugaredLog
 			}
 
 			key := internal.MakeKey()
-			if err := storage.Set(key, item.OriginalURL); err != nil {
+			if _, err := storage.Set(key, item.OriginalURL); err != nil {
 				logger.Error(err)
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return
