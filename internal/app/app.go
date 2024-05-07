@@ -4,10 +4,11 @@ import (
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
+	"go.uber.org/zap"
+
 	"github.com/real-splendid/url-shortener-practicum/internal"
 	"github.com/real-splendid/url-shortener-practicum/internal/handlers"
 	"github.com/real-splendid/url-shortener-practicum/internal/middleware"
-	"go.uber.org/zap"
 )
 
 type app struct {
@@ -21,11 +22,13 @@ func NewApp(storage internal.Storage, logger *zap.SugaredLogger, baseURL string,
 	router := chi.NewRouter()
 	router.Use(middleware.MakeLogMiddleware(logger))
 	router.Use(middleware.MakeGzipMiddleware(logger))
+	router.Use(middleware.MakeAuthMiddleware(logger))
 	router.Post("/", handlers.MakeShortenHandler(storage, logger, baseURL))
 	router.Post("/api/shorten", handlers.MakeAPIShortenHandler(storage, logger, baseURL))
 	router.Post("/api/shorten/batch", handlers.MakeAPIShortenBatchHandler(storage, logger, baseURL))
 	router.Get("/{key}", handlers.MakeRedirectionHandler(storage, logger))
 	router.Get("/ping", handlers.MakePingHandler(dDSN, logger))
+	router.Get("/api/user/urls", handlers.MakeUserURLsHandler(storage, logger, baseURL))
 	return &app{
 		router:  router,
 		storage: storage,
