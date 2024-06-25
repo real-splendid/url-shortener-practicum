@@ -2,19 +2,24 @@ package main
 
 import (
 	"flag"
-	"net/http"
 	"os"
 
-	"github.com/go-chi/chi/v5"
-	"github.com/real-splendid/url-shortener-practicum/internal"
+	"github.com/real-splendid/url-shortener-practicum/internal/app"
+	"github.com/real-splendid/url-shortener-practicum/internal/storage"
 )
 
-func main() {
-	defer internal.Logger.Sync()
+var (
+	address         *string
+	baseURL         *string
+	fileStoragePath *string
+	dDSN            *string
+)
 
-	address := flag.String("a", ":8080", "server address")
-	baseURL := flag.String("b", internal.DefaultBaseURL, "base url")
-	fileStoragePath := flag.String("f", "/tmp/short-url-db.json", "file to store results")
+func init() {
+	address = flag.String("a", ":8080", "server address")
+	baseURL = flag.String("b", "http://localhost:8080", "base url")
+	fileStoragePath = flag.String("f", "/tmp/short-url-db.json", "file to store results")
+	dDSN = flag.String("d", "", "database dsn")
 	flag.Parse()
 	if envAddress, ok := os.LookupEnv("SERVER_ADDRESS"); ok {
 		*address = envAddress
@@ -25,19 +30,15 @@ func main() {
 	if envFileStoragePath, ok := os.LookupEnv("FILE_STORAGE_PATH"); ok {
 		*fileStoragePath = envFileStoragePath
 	}
-	internal.SetBaseURL(*baseURL)
-	fStorage := internal.NewFileStorage(*fileStoragePath)
-	defer fStorage.Close()
-	internal.SetStorage(fStorage)
-
-	r := chi.NewRouter()
-	r.Use(internal.LoggingMiddleware)
-	r.Use(internal.GzipMiddleware)
-	r.Post("/", internal.HandleShorten)
-	r.Post("/api/shorten", internal.HandleAPIShorten)
-	r.Get("/{key}", internal.HandleRedirection)
-	if err := http.ListenAndServe(*address, r); err != nil {
-		internal.Logger.Error(err)
-		os.Exit(1)
+	if envDSN, ok := os.LookupEnv("DATABASE_DSN"); ok {
+		*dDSN = envDSN
 	}
+}
+
+func main() {
+	s, _ := storage.NewFileStorage(*fileStoragePath)
+	defer s.Close()
+
+	app := app.NewApp(s, *baseURL, *dDSN)
+	app.Serve(address)
 }

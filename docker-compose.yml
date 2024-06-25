@@ -1,0 +1,11 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:16.2-alpine3.19
+    ports:
+      - 5432:5432
+    environment:
+      - POSTGRES_DB=short
+      - POSTGRES_USER=app
+      - POSTGRES_PASSWORD=pass
