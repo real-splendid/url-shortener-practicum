@@ -2,7 +2,7 @@ TEST_CMD := ./shortenertestbeta -test.v -source-path=. -binary-path=./cmd/shorte
 
 
 test:
-	go test ./internal/...
+	go test ./internal/... -v
 
 vet:
 	go vet -vettool=statictest  ./...
@@ -21,4 +21,10 @@ test-iteration:
 	$(TEST_CMD) -test.run=^TestIteration10$$ -file-storage-path=.vscode/tmp.json
 	$(TEST_CMD) -test.run=^TestIteration11$$ -file-storage-path=.vscode/tmp.json
 	$(TEST_CMD) -test.run=^TestIteration12$$ -file-storage-path=.vscode/tmp.json
+	$(TEST_CMD) -test.run=^TestIteration13$$ -file-storage-path=.vscode/tmp.json
 
+up:
+	docker compose up -d
+
+down:
+	docker compose down

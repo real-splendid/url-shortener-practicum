@@ -18,9 +18,9 @@ func (s *memoryStorage) Close() error {
 	return nil
 }
 
-func (s *memoryStorage) Set(key string, value string) error {
+func (s *memoryStorage) Set(key string, value string) (string, error) {
 	s.data[key] = value
-	return nil
+	return "", nil
 }
 
 func (s *memoryStorage) Get(key string) (string, error) {

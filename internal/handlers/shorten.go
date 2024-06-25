@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"errors"
 	"io"
 	"net/http"
 	"net/url"
@@ -20,7 +21,14 @@ func MakeShortenHandler(storage internal.Storage, logger *zap.SugaredLogger, bas
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
-		storage.Set(key, reqBody)
+		duplicateKey, err := storage.Set(key, reqBody)
+		if errors.Is(err, internal.ErrDuplicateKey) {
+			logger.Info("key already exists", duplicateKey)
+			shortURL := baseURL + "/" + duplicateKey
+			w.WriteHeader(http.StatusConflict)
+			w.Write([]byte(shortURL))
+			return
+		}
 		shortURL := baseURL + "/" + key
 		w.WriteHeader(http.StatusCreated)
 		w.Write([]byte(shortURL))
