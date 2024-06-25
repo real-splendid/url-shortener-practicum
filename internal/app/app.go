@@ -23,6 +23,7 @@ func NewApp(storage internal.Storage, logger *zap.SugaredLogger, baseURL string,
 	router.Use(middleware.MakeGzipMiddleware(logger))
 	router.Post("/", handlers.MakeShortenHandler(storage, logger, baseURL))
 	router.Post("/api/shorten", handlers.MakeAPIShortenHandler(storage, logger, baseURL))
+	router.Post("/api/shorten/batch", handlers.MakeAPIShortenBatchHandler(storage, logger, baseURL))
 	router.Get("/{key}", handlers.MakeRedirectionHandler(storage, logger))
 	router.Get("/ping", handlers.MakePingHandler(dDSN, logger))
 	return &app{
