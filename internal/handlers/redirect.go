@@ -4,8 +4,9 @@ import (
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
-	"github.com/real-splendid/url-shortener-practicum/internal"
 	"go.uber.org/zap"
+
+	"github.com/real-splendid/url-shortener-practicum/internal"
 )
 
 func MakeRedirectionHandler(storage internal.Storage, logger *zap.SugaredLogger) http.HandlerFunc {

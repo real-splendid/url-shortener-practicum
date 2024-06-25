@@ -6,8 +6,10 @@ import (
 	"net/http"
 	"net/url"
 
-	"github.com/real-splendid/url-shortener-practicum/internal"
 	"go.uber.org/zap"
+
+	"github.com/real-splendid/url-shortener-practicum/internal"
+	"github.com/real-splendid/url-shortener-practicum/internal/middleware"
 )
 
 type (
@@ -24,6 +26,12 @@ type (
 
 func MakeAPIShortenBatchHandler(storage internal.Storage, logger *zap.SugaredLogger, baseURL string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		userID, ok := middleware.GetUserID(r)
+		if !ok {
+			http.Error(w, "Unauthorized", http.StatusUnauthorized)
+			return
+		}
+
 		var req []ShortenBatchReq
 		body, err := io.ReadAll(r.Body)
 		if err != nil {
@@ -48,7 +56,7 @@ func MakeAPIShortenBatchHandler(storage internal.Storage, logger *zap.SugaredLog
 			}
 
 			key := internal.MakeKey()
-			if _, err := storage.Set(key, item.OriginalURL); err != nil {
+			if _, err := storage.Set(key, item.OriginalURL, userID); err != nil {
 				logger.Error(err)
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return
