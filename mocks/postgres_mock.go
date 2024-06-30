@@ -12,6 +12,7 @@ package mocks
 import (
 	reflect "reflect"
 
+	internal "github.com/real-splendid/url-shortener-practicum/internal"
 	gomock "go.uber.org/mock/gomock"
 )
 
@@ -52,6 +53,20 @@ func (mr *MockStorageMockRecorder) Close() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Close", reflect.TypeOf((*MockStorage)(nil).Close))
 }
 
+// DeleteUserURLs mocks base method.
+func (m *MockStorage) DeleteUserURLs(userID string, shortURLs []string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteUserURLs", userID, shortURLs)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeleteUserURLs indicates an expected call of DeleteUserURLs.
+func (mr *MockStorageMockRecorder) DeleteUserURLs(userID, shortURLs any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteUserURLs", reflect.TypeOf((*MockStorage)(nil).DeleteUserURLs), userID, shortURLs)
+}
+
 // Get mocks base method.
 func (m *MockStorage) Get(key string) (string, error) {
 	m.ctrl.T.Helper()
@@ -67,17 +82,32 @@ func (mr *MockStorageMockRecorder) Get(key any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockStorage)(nil).Get), key)
 }
 
-// Set mocks base method.
-func (m *MockStorage) Set(key, value string) (string, error) {
+// GetUserURLs mocks base method.
+func (m *MockStorage) GetUserURLs(userID string) ([]internal.URLPair, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Set", key, value)
+	ret := m.ctrl.Call(m, "GetUserURLs", userID)
+	ret0, _ := ret[0].([]internal.URLPair)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetUserURLs indicates an expected call of GetUserURLs.
+func (mr *MockStorageMockRecorder) GetUserURLs(userID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUserURLs", reflect.TypeOf((*MockStorage)(nil).GetUserURLs), userID)
+}
+
+// Set mocks base method.
+func (m *MockStorage) Set(key, value, userID string) (string, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Set", key, value, userID)
 	ret0, _ := ret[0].(string)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // Set indicates an expected call of Set.
-func (mr *MockStorageMockRecorder) Set(key, value any) *gomock.Call {
+func (mr *MockStorageMockRecorder) Set(key, value, userID any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Set", reflect.TypeOf((*MockStorage)(nil).Set), key, value)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Set", reflect.TypeOf((*MockStorage)(nil).Set), key, value, userID)
 }

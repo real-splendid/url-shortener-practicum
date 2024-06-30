@@ -4,8 +4,9 @@ import (
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
-	"github.com/real-splendid/url-shortener-practicum/internal"
 	"go.uber.org/zap"
+
+	"github.com/real-splendid/url-shortener-practicum/internal"
 )
 
 func MakeRedirectionHandler(storage internal.Storage, logger *zap.SugaredLogger) http.HandlerFunc {
@@ -13,8 +14,13 @@ func MakeRedirectionHandler(storage internal.Storage, logger *zap.SugaredLogger)
 		key := chi.URLParam(r, "key")
 		originalURL, err := storage.Get(key)
 		if err != nil {
-			logger.Infof("key %s not found", key)
-			http.Error(w, "Not Found", http.StatusNotFound)
+			if err == internal.ErrURLDeleted {
+				logger.Infof("URL %s has been deleted", key)
+				http.Error(w, "Gone", http.StatusGone)
+			} else {
+				logger.Infof("key %s not found", key)
+				http.Error(w, "Not Found", http.StatusNotFound)
+			}
 			return
 		}
 		w.Header().Set("Location", originalURL)
