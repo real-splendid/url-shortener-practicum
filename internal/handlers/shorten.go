@@ -8,12 +8,20 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/real-splendid/url-shortener-practicum/internal"
 	"go.uber.org/zap"
+
+	"github.com/real-splendid/url-shortener-practicum/internal"
+	"github.com/real-splendid/url-shortener-practicum/internal/middleware"
 )
 
 func MakeShortenHandler(storage internal.Storage, logger *zap.SugaredLogger, baseURL string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		userID, ok := middleware.GetUserID(r)
+		if !ok {
+			http.Error(w, "Unauthorized", http.StatusUnauthorized)
+			return
+		}
+
 		key := internal.MakeKey()
 		reqBody, err := readRequestBody(r)
 		if err != nil {
@@ -21,7 +29,7 @@ func MakeShortenHandler(storage internal.Storage, logger *zap.SugaredLogger, bas
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
-		duplicateKey, err := storage.Set(key, reqBody)
+		duplicateKey, err := storage.Set(key, reqBody, userID)
 		if errors.Is(err, internal.ErrDuplicateKey) {
 			logger.Info("key already exists", duplicateKey)
 			shortURL := baseURL + "/" + duplicateKey

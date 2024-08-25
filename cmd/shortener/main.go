@@ -4,11 +4,11 @@ import (
 	"flag"
 	"os"
 
+	"go.uber.org/zap"
+
 	"github.com/real-splendid/url-shortener-practicum/internal"
 	"github.com/real-splendid/url-shortener-practicum/internal/app"
 	"github.com/real-splendid/url-shortener-practicum/internal/storage"
-
-	"go.uber.org/zap"
 )
 
 var (

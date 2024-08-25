@@ -8,9 +8,11 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/real-splendid/url-shortener-practicum/internal/storage"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/zap"
+
+	"github.com/real-splendid/url-shortener-practicum/internal/middleware"
+	"github.com/real-splendid/url-shortener-practicum/internal/storage"
 )
 
 func TestHandleAPIShortenBatch(t *testing.T) {
@@ -22,6 +24,9 @@ func TestHandleAPIShortenBatch(t *testing.T) {
 		})
 		assert.NoError(t, err)
 		req := httptest.NewRequest(http.MethodPost, "/api/shorten/batch", bytes.NewReader(reqBody))
+
+		mockSignedCookie := middleware.SignCookie("test-user-id")
+		req.AddCookie(&http.Cookie{Name: "user_id", Value: mockSignedCookie})
 
 		handler := MakeAPIShortenBatchHandler(storage.NewMemoryStorage(), zap.NewNop().Sugar(), "http://localhost")
 		handler(recorder, req)
@@ -41,5 +46,22 @@ func TestHandleAPIShortenBatch(t *testing.T) {
 		assert.Regexp(t, "http://[^/]+/\\w{12}$", resp[0].ShortURL)
 		assert.Equal(t, "2", resp[1].CorrelationID)
 		assert.Regexp(t, "http://[^/]+/\\w{12}$", resp[1].ShortURL)
+	})
+
+	t.Run("unauthorized-request", func(t *testing.T) {
+		reqBody, err := json.Marshal([]ShortenBatchReq{
+			{CorrelationID: "1", OriginalURL: "https://ya.ru"},
+		})
+		assert.NoError(t, err)
+		req := httptest.NewRequest(http.MethodPost, "/api/shorten/batch", bytes.NewReader(reqBody))
+		recorder := httptest.NewRecorder()
+		handler := MakeAPIShortenBatchHandler(storage.NewMemoryStorage(), zap.NewNop().Sugar(), "http://localhost")
+
+		handler(recorder, req)
+
+		result := recorder.Result()
+		defer result.Body.Close()
+
+		assert.Equal(t, http.StatusUnauthorized, result.StatusCode)
 	})
 }

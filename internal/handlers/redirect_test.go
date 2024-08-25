@@ -7,16 +7,18 @@ import (
 	"testing"
 
 	"github.com/go-chi/chi/v5"
-	"github.com/real-splendid/url-shortener-practicum/internal/storage"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/zap"
+
+	"github.com/real-splendid/url-shortener-practicum/internal/storage"
 )
 
 func TestHandleRedirection(t *testing.T) {
 	originalURL := "https://ya.ru"
 	key := "testtest"
+	userID := "test-user-id"
 	s := storage.NewMemoryStorage()
-	s.Set(key, originalURL)
+	s.Set(key, originalURL, userID)
 	handler := MakeRedirectionHandler(s, zap.NewNop().Sugar())
 	t.Run("redirect", func(t *testing.T) {
 		recorder := httptest.NewRecorder()

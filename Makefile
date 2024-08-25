@@ -4,6 +4,9 @@ TEST_CMD := ./shortenertestbeta -test.v -source-path=. -binary-path=./cmd/shorte
 test:
 	go test ./internal/... -v
 
+generate-test-mocks:
+	mockgen -source=internal/contracts.go -destination=mocks/postgres_mock.go -package=mocks Storage
+
 vet:
 	go vet -vettool=statictest  ./...
 
@@ -22,6 +25,7 @@ test-iteration:
 	$(TEST_CMD) -test.run=^TestIteration11$$ -file-storage-path=.vscode/tmp.json
 	$(TEST_CMD) -test.run=^TestIteration12$$ -file-storage-path=.vscode/tmp.json
 	$(TEST_CMD) -test.run=^TestIteration13$$ -file-storage-path=.vscode/tmp.json
+	$(TEST_CMD) -test.run=^TestIteration14$$ -file-storage-path=.vscode/tmp.json
 
 up:
 	docker compose up -d

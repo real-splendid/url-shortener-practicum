@@ -5,61 +5,86 @@ import (
 	"encoding/json"
 	"errors"
 	"os"
-	"strconv"
+
+	_ "github.com/lib/pq"
+
+	"github.com/real-splendid/url-shortener-practicum/internal"
 )
 
-type ResultRecord struct {
+type fileRecord struct {
 	UUID        string `json:"uuid"`
-	ShortURL    string `json:"short_url"`
 	OriginalURL string `json:"original_url"`
+	UserID      string `json:"user_id"`
 }
 
 type fileStorage struct {
-	data map[string]string
-	file *os.File
+	data     map[string]string
+	userURLs map[string][]internal.URLPair
+	file     *os.File
 }
 
 func NewFileStorage(path string) (*fileStorage, error) {
-	data := make(map[string]string)
 	f, err := os.OpenFile(path, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
 	if err != nil {
-		return &fileStorage{}, err
+		return nil, err
 	}
-	f.Seek(0, 0)
-	scanner := bufio.NewScanner(f)
-	var rr ResultRecord
 
+	fs := &fileStorage{
+		data:     make(map[string]string),
+		userURLs: make(map[string][]internal.URLPair),
+		file:     f,
+	}
+
+	scanner := bufio.NewScanner(f)
+	var rr fileRecord
 	for scanner.Scan() {
-		err := json.Unmarshal(scanner.Bytes(), &rr)
-		if err != nil {
-			return &fileStorage{}, err
+		if err := json.Unmarshal(scanner.Bytes(), &rr); err != nil {
+			return nil, err
 		}
-		data[rr.ShortURL] = rr.OriginalURL
+		fs.data[rr.UUID] = rr.OriginalURL
+		fs.userURLs[rr.UserID] = append(fs.userURLs[rr.UserID], internal.URLPair{
+			ShortURL:    rr.UUID,
+			OriginalURL: rr.OriginalURL,
+		})
 	}
+
 	if err := scanner.Err(); err != nil {
-		return &fileStorage{}, err
+		return nil, err
 	}
-	return &fileStorage{data: data, file: f}, nil
+
+	return fs, nil
 }
 
 func (s *fileStorage) Close() error {
 	return s.file.Close()
 }
 
-func (s *fileStorage) Set(key string, value string) (string, error) {
-	rr := ResultRecord{
-		UUID:        strconv.Itoa(len(s.data) + 1),
-		ShortURL:    key,
-		OriginalURL: value,
+func (s *fileStorage) Set(key string, value string, userID string) (string, error) {
+	if existingKey, exists := s.getKeyByValue(value); exists {
+		return existingKey, internal.ErrDuplicateKey
 	}
-	jsonBytes, err := json.Marshal(rr)
+
+	rr := fileRecord{
+		UUID:        key,
+		OriginalURL: value,
+		UserID:      userID,
+	}
+
+	jsonData, err := json.Marshal(rr)
 	if err != nil {
 		return "", err
 	}
-	s.file.Write(jsonBytes)
-	s.file.Write([]byte("\n"))
+
+	if _, err := s.file.Write(append(jsonData, '\n')); err != nil {
+		return "", err
+	}
 
 	s.data[key] = value
+	s.userURLs[userID] = append(s.userURLs[userID], internal.URLPair{
+		ShortURL:    key,
+		OriginalURL: value,
+	})
+
 	return "", nil
 }
 
@@ -69,4 +94,17 @@ func (s *fileStorage) Get(key string) (string, error) {
 		return "", errors.New("key not found")
 	}
 	return v, nil
+}
+
+func (s *fileStorage) GetUserURLs(userID string) ([]internal.URLPair, error) {
+	return s.userURLs[userID], nil
+}
+
+func (s *fileStorage) getKeyByValue(value string) (string, bool) {
+	for k, v := range s.data {
+		if v == value {
+			return k, true
+		}
+	}
+	return "", false
 }
