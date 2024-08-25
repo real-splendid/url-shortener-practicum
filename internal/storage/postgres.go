@@ -4,8 +4,6 @@ import (
 	"database/sql"
 	"errors"
 
-	// "strings"
-
 	_ "github.com/lib/pq"
 
 	"github.com/real-splendid/url-shortener-practicum/internal"
@@ -26,7 +24,8 @@ func NewPostgresStorage(dsn string) (*postgresStorage, error) {
 			id SERIAL PRIMARY KEY,
 			short_url TEXT UNIQUE NOT NULL,
 			original_url TEXT NOT NULL,
-			user_id TEXT NOT NULL
+			user_id TEXT NOT NULL,
+			is_deleted BOOLEAN NOT NULL DEFAULT FALSE
 		)
 	`)
 	if err != nil {
@@ -42,7 +41,7 @@ func (s *postgresStorage) Close() error {
 
 func (s *postgresStorage) Set(key string, value string, userID string) (string, error) {
 	var existingKey string
-	err := s.db.QueryRow("SELECT short_url FROM urls WHERE original_url = $1", value).Scan(&existingKey)
+	err := s.db.QueryRow("SELECT short_url FROM urls WHERE original_url = $1 AND user_id = $2", value, userID).Scan(&existingKey)
 	if err == nil {
 		return existingKey, internal.ErrDuplicateKey
 	} else if err != sql.ErrNoRows {
@@ -59,18 +58,22 @@ func (s *postgresStorage) Set(key string, value string, userID string) (string, 
 
 func (s *postgresStorage) Get(key string) (string, error) {
 	var originalURL string
-	err := s.db.QueryRow("SELECT original_url FROM urls WHERE short_url = $1", key).Scan(&originalURL)
+	var isDeleted bool
+	err := s.db.QueryRow("SELECT original_url, is_deleted FROM urls WHERE short_url = $1", key).Scan(&originalURL, &isDeleted)
 	if err == sql.ErrNoRows {
 		return "", errors.New("key not found")
 	}
 	if err != nil {
 		return "", err
 	}
+	if isDeleted {
+		return "", internal.ErrURLDeleted
+	}
 	return originalURL, nil
 }
 
 func (s *postgresStorage) GetUserURLs(userID string) ([]internal.URLPair, error) {
-	rows, err := s.db.Query("SELECT short_url, original_url FROM urls WHERE user_id = $1", userID)
+	rows, err := s.db.Query("SELECT short_url, original_url FROM urls WHERE user_id = $1 AND is_deleted = FALSE", userID)
 	if err != nil {
 		return nil, err
 	}
@@ -89,4 +92,27 @@ func (s *postgresStorage) GetUserURLs(userID string) ([]internal.URLPair, error)
 	}
 
 	return urls, nil
+}
+
+func (s *postgresStorage) DeleteUserURLs(userID string, shortURLs []string) error {
+	tx, err := s.db.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	stmt, err := tx.Prepare("UPDATE urls SET is_deleted = TRUE WHERE user_id = $1 AND short_url = $2")
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+
+	for _, shortURL := range shortURLs {
+		_, err := stmt.Exec(userID, shortURL)
+		if err != nil {
+			return err
+		}
+	}
+
+	return tx.Commit()
 }

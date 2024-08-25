@@ -29,6 +29,7 @@ func NewApp(storage internal.Storage, logger *zap.SugaredLogger, baseURL string,
 	router.Get("/{key}", handlers.MakeRedirectionHandler(storage, logger))
 	router.Get("/ping", handlers.MakePingHandler(dDSN, logger))
 	router.Get("/api/user/urls", handlers.MakeUserURLsHandler(storage, logger, baseURL))
+	router.Delete("/api/user/urls", handlers.MakeDeleteUserURLsHandler(storage, logger))
 	return &app{
 		router:  router,
 		storage: storage,

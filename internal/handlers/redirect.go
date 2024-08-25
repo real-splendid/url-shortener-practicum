@@ -14,8 +14,13 @@ func MakeRedirectionHandler(storage internal.Storage, logger *zap.SugaredLogger)
 		key := chi.URLParam(r, "key")
 		originalURL, err := storage.Get(key)
 		if err != nil {
-			logger.Infof("key %s not found", key)
-			http.Error(w, "Not Found", http.StatusNotFound)
+			if err == internal.ErrURLDeleted {
+				logger.Infof("URL %s has been deleted", key)
+				http.Error(w, "Gone", http.StatusGone)
+			} else {
+				logger.Infof("key %s not found", key)
+				http.Error(w, "Not Found", http.StatusNotFound)
+			}
 			return
 		}
 		w.Header().Set("Location", originalURL)
