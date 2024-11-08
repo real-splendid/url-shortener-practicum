@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 
 	"github.com/real-splendid/url-shortener-practicum/internal/middleware"
@@ -46,4 +47,23 @@ func TestHandleAPIShorten(t *testing.T) {
 
 		assert.Equal(t, http.StatusUnauthorized, recorder.Code)
 	})
+}
+
+func BenchmarkHandleAPIShorten(b *testing.B) {
+	logger := zap.NewNop().Sugar()
+	storage := storage.NewMemoryStorage()
+	handler := MakeAPIShortenHandler(storage, logger, "http://localhost")
+
+	mockUserID := "test-user-id"
+	mockSignedCookie := middleware.SignCookie(mockUserID)
+	reqBody, err := json.Marshal(ShortenReq{URL: "https://ya.ru"})
+	require.NoError(b, err)
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		recorder := httptest.NewRecorder()
+		request := httptest.NewRequest(http.MethodPost, "/api/shorten", bytes.NewReader(reqBody))
+		request.AddCookie(&http.Cookie{Name: "user_id", Value: mockSignedCookie})
+		handler(recorder, request)
+	}
 }

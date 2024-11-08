@@ -61,3 +61,20 @@ func TestHandleShorten(t *testing.T) {
 		assert.Regexp(t, "http://[^/]+/\\w+$", string(body))
 	})
 }
+
+func BenchmarkHandleShorten(b *testing.B) {
+	logger := zap.NewNop().Sugar()
+	storage := storage.NewMemoryStorage()
+	handler := MakeShortenHandler(storage, logger, "http://localhost")
+	mockUserID := "test-user-id"
+	mockSignedCookie := middleware.SignCookie(mockUserID)
+	body := strings.NewReader("https://ya.ru")
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		recorder := httptest.NewRecorder()
+		request := httptest.NewRequest(http.MethodPost, "/", body)
+		request.AddCookie(&http.Cookie{Name: "user_id", Value: mockSignedCookie})
+		handler(recorder, request)
+	}
+}

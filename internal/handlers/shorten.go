@@ -48,7 +48,10 @@ func makeKey() string {
 }
 
 func readRequestBody(r *http.Request) (string, error) {
-	body, err := io.ReadAll(r.Body)
+	const maxBodySize = 1024 * 1024
+	limitedReader := io.LimitReader(r.Body, maxBodySize)
+	body, err := io.ReadAll(limitedReader)
+
 	if err != nil {
 		return "", err
 	}

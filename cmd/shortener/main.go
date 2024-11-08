@@ -3,6 +3,8 @@ package main
 import (
 	"flag"
 	"os"
+	"runtime"
+	"runtime/pprof"
 
 	"go.uber.org/zap"
 
@@ -23,6 +25,7 @@ func init() {
 	baseURL = flag.String("b", "http://localhost:8080", "base url")
 	fileStoragePath = flag.String("f", "/tmp/short-url-db.json", "file to store results")
 	dDSN = flag.String("d", "", "database dsn")
+	memprofile := flag.String("memprofile", "", "write memory profile to file")
 	flag.Parse()
 	if envAddress, ok := os.LookupEnv("SERVER_ADDRESS"); ok {
 		*address = envAddress
@@ -35,6 +38,13 @@ func init() {
 	}
 	if envDSN, ok := os.LookupEnv("DATABASE_DSN"); ok {
 		*dDSN = envDSN
+	}
+
+	if *memprofile != "" {
+		f, _ := os.Create(*memprofile)
+		defer f.Close()
+		runtime.GC()
+		pprof.WriteHeapProfile(f)
 	}
 }
 
