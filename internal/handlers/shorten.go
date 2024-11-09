@@ -14,6 +14,9 @@ import (
 	"github.com/real-splendid/url-shortener-practicum/internal/middleware"
 )
 
+// MakeShortenHandler создает обработчик для сокращения URL.
+// Принимает хранилище, логгер и базовый URL.
+// Возвращает функцию обработчика.
 func MakeShortenHandler(storage internal.Storage, logger *zap.SugaredLogger, baseURL string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		userID, ok := middleware.GetUserID(r)

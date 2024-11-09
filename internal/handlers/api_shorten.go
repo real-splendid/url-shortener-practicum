@@ -13,16 +13,21 @@ import (
 	"github.com/real-splendid/url-shortener-practicum/internal/middleware"
 )
 
-type (
-	ShortenReq struct {
-		URL string `json:"url"`
-	}
+// ShortenReq структура запроса для сокращения URL.
+type ShortenReq struct {
+	// URL URL для сокращения.
+	URL string `json:"url"`
+}
 
-	ShortenResp struct {
-		Result string `json:"result"`
-	}
-)
+// ShortenResp структура ответа для сокращения URL.
+type ShortenResp struct {
+	// Result сокращенный URL.
+	Result string `json:"result"`
+}
 
+// MakeAPIShortenHandler создает обработчик для сокращения URL через API.
+// Принимает хранилище, логгер и базовый URL.
+// Возвращает функцию обработчика.
 func MakeAPIShortenHandler(storage internal.Storage, logger *zap.SugaredLogger, baseURL string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		userID, ok := middleware.GetUserID(r)
@@ -66,6 +71,9 @@ func MakeAPIShortenHandler(storage internal.Storage, logger *zap.SugaredLogger, 
 	}
 }
 
+// readURLFromAPIRequestBody читает URL из тела запроса API.
+// Принимает запрос HTTP.
+// Возвращает URL и ошибку, если произошла ошибка при чтении или парсинге URL.
 func readURLFromAPIRequestBody(r *http.Request) (string, error) {
 	const maxBodySize = 1024 * 1024
 	limitedReader := io.LimitReader(r.Body, maxBodySize)

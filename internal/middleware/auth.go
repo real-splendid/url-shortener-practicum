@@ -1,3 +1,4 @@
+// Package middleware предоставляет middleware для аутентификации пользователей.
 package middleware
 
 import (
@@ -17,6 +18,9 @@ const (
 	secretKey  = "92KbwrTL3zWMqD7egj4L5Y7"
 )
 
+// MakeAuthMiddleware создает middleware для аутентификации пользователей.
+// Принимает логгер.
+// Возвращает функцию, которая принимает обработчик запроса и возвращает новый обработчик с добавленной аутентификацией.
 func MakeAuthMiddleware(logger *zap.SugaredLogger) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -43,6 +47,9 @@ func MakeAuthMiddleware(logger *zap.SugaredLogger) func(http.Handler) http.Handl
 	}
 }
 
+// SignCookie подписывает значение куки с помощью HMAC-SHA256.
+// Принимает значение для подписи.
+// Возвращает подписанное значение.
 func SignCookie(value string) string {
 	// FIXME: move to jwt
 	h := hmac.New(sha256.New, []byte(secretKey))
@@ -60,6 +67,9 @@ func validateCookie(signedValue string) bool {
 	return SignCookie(parts[0]) == signedValue
 }
 
+// GetUserID извлекает ID пользователя из куки.
+// Принимает HTTP запрос.
+// Возвращает ID пользователя и булево значение, указывающее на успех операции.
 func GetUserID(r *http.Request) (string, bool) {
 	cookie, err := r.Cookie("user_id")
 	if err != nil {

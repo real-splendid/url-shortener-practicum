@@ -1,3 +1,4 @@
+// Package storage предоставляет функциональность для хранения данных.
 package storage
 
 import (
@@ -10,11 +11,16 @@ import (
 	"github.com/real-splendid/url-shortener-practicum/internal"
 )
 
+// fileRecord представляет запись в файле хранилища.
 type fileRecord struct {
-	UUID        string `json:"uuid"`
+	// UUID уникальный идентификатор записи.
+	UUID string `json:"uuid"`
+	// OriginalURL исходный URL.
 	OriginalURL string `json:"original_url"`
-	UserID      string `json:"user_id"`
-	IsDeleted   bool   `json:"is_deleted"`
+	// UserID идентификатор пользователя, создавшего запись.
+	UserID string `json:"user_id"`
+	// IsDeleted флаг, указывающий, удалена ли запись.
+	IsDeleted bool `json:"is_deleted"`
 }
 
 type fileStorage struct {
@@ -24,6 +30,9 @@ type fileStorage struct {
 	mu       sync.RWMutex
 }
 
+// NewFileStorage создает новое файловое хранилище.
+// Принимает путь к файлу хранилища.
+// Возвращает указатель на fileStorage и ошибку, если произошла ошибка при открытии файла.
 func NewFileStorage(path string) (*fileStorage, error) {
 	f, err := os.OpenFile(path, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
 	if err != nil {
@@ -57,10 +66,16 @@ func NewFileStorage(path string) (*fileStorage, error) {
 	return s, nil
 }
 
+// Close закрывает файл хранилища.
+// Возвращает ошибку, если произошла ошибка при закрытии файла.
 func (s *fileStorage) Close() error {
 	return s.file.Close()
 }
 
+// Set сохраняет пару ключ-значение в хранилище.
+// Принимает ключ, значение и ID пользователя.
+// Возвращает ошибку, если произошла ошибка при записи в файл.
+// Возвращает internal.ErrDuplicateKey, если ключ уже существует.
 func (s *fileStorage) Set(key string, value string, userID string) (string, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -101,6 +116,9 @@ func (s *fileStorage) Set(key string, value string, userID string) (string, erro
 	return "", nil
 }
 
+// Get возвращает значение по ключу.
+// Принимает ключ.
+// Возвращает значение и ошибку, если ключ не найден или запись удалена.
 func (s *fileStorage) Get(key string) (string, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
@@ -117,6 +135,9 @@ func (s *fileStorage) Get(key string) (string, error) {
 	return record.OriginalURL, nil
 }
 
+// GetUserURLs возвращает все URL-адреса, принадлежащие пользователю.
+// Принимает ID пользователя.
+// Возвращает слайс URLPair и ошибку, если произошла ошибка.
 func (s *fileStorage) GetUserURLs(userID string) ([]internal.URLPair, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
@@ -134,6 +155,9 @@ func (s *fileStorage) GetUserURLs(userID string) ([]internal.URLPair, error) {
 	return urls, nil
 }
 
+// DeleteUserURLs удаляет URL-адреса пользователя по коротким ключам.
+// Принимает ID пользователя и слайс коротких ключей для удаления.
+// Возвращает ошибку, если произошла ошибка при удалении.
 func (s *fileStorage) DeleteUserURLs(userID string, shortKeysToDelete []string) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()

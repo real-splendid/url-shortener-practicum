@@ -11,6 +11,9 @@ import (
 	"github.com/real-splendid/url-shortener-practicum/internal/middleware"
 )
 
+// MakeDeleteUserURLsHandler создает обработчик для удаления URL пользователя.
+// Принимает хранилище и логгер.
+// Возвращает функцию обработчика.
 func MakeDeleteUserURLsHandler(storage internal.Storage, logger *zap.SugaredLogger) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		userID, ok := middleware.GetUserID(r)

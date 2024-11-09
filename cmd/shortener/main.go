@@ -13,12 +13,17 @@ import (
 	"github.com/real-splendid/url-shortener-practicum/internal/storage"
 )
 
-var (
-	address         *string
-	baseURL         *string
-	fileStoragePath *string
-	dDSN            *string
-)
+// address указывает адрес, на котором будет запущен сервер.
+var address *string
+
+// baseURL указывает базовый URL для коротких ссылок.
+var baseURL *string
+
+// fileStoragePath указывает путь к файлу для хранения данных (если используется файловое хранилище).
+var fileStoragePath *string
+
+// dDSN указывает DSN для подключения к базе данных PostgreSQL.
+var dDSN *string
 
 func init() {
 	address = flag.String("a", ":8080", "server address")

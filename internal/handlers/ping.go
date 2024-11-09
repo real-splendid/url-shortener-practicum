@@ -10,6 +10,9 @@ import (
 	"go.uber.org/zap"
 )
 
+// MakePingHandler создает обработчик для проверки доступности базы данных.
+// Принимает строку подключения к базе данных и логгер.
+// Возвращает функцию обработчика.
 func MakePingHandler(dDSN string, logger *zap.SugaredLogger) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		db, err := sql.Open("postgres", dDSN)

@@ -30,6 +30,9 @@ test-iteration:
 	$(TEST_CMD) -test.run=^TestIteration13$$
 	$(TEST_CMD) -test.run=^TestIteration14$$
 	$(TEST_CMD) -test.run=^TestIteration15$$
+	$(TEST_CMD) -test.run=^TestIteration16$$
+	$(TEST_CMD) -test.run=^TestIteration17$$
+	$(TEST_CMD) -test.run=^TestIteration18$$
 
 up:
 	docker compose up -d

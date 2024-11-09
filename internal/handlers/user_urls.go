@@ -10,6 +10,9 @@ import (
 	"github.com/real-splendid/url-shortener-practicum/internal/middleware"
 )
 
+// MakeUserURLsHandler создает обработчик для получения списка URL пользователя.
+// Принимает хранилище, логгер и базовый URL.
+// Возвращает функцию обработчика.
 func MakeUserURLsHandler(storage internal.Storage, logger *zap.SugaredLogger, baseURL string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		userID, ok := middleware.GetUserID(r)
