@@ -1,4 +1,5 @@
 # Сервис сокращения URL
+![coverage](https://raw.githubusercontent.com/real-splendid/url-shortener-practicum/badges/.badges/18/merge/coverage.svg)
 
 ## Запуск автотестов
 ```

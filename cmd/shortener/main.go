@@ -25,7 +25,7 @@ var fileStoragePath *string
 // dDSN указывает DSN для подключения к базе данных PostgreSQL.
 var dDSN *string
 
-func init() {
+func init() { // coverage-ignore
 	address = flag.String("a", ":8080", "server address")
 	baseURL = flag.String("b", "http://localhost:8080", "base url")
 	fileStoragePath = flag.String("f", "/tmp/short-url-db.json", "file to store results")
@@ -53,7 +53,7 @@ func init() {
 	}
 }
 
-func main() {
+func main() { // coverage-ignore
 	rawLogger, _ := zap.NewDevelopment()
 	logger := rawLogger.Sugar()
 	var err error

@@ -8,9 +8,12 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/mock/gomock"
 	"go.uber.org/zap"
 
+	"github.com/real-splendid/url-shortener-practicum/internal"
 	"github.com/real-splendid/url-shortener-practicum/internal/storage"
+	"github.com/real-splendid/url-shortener-practicum/mocks"
 )
 
 func TestHandleRedirection(t *testing.T) {
@@ -43,5 +46,27 @@ func TestHandleRedirection(t *testing.T) {
 		defer result.Body.Close()
 
 		assert.Equal(t, http.StatusNotFound, result.StatusCode)
+	})
+
+	t.Run("deleted-url", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		mockStorage := mocks.NewMockStorage(ctrl)
+		mockStorage.EXPECT().
+			Get(gomock.Any()).
+			Return("", internal.ErrURLDeleted)
+
+		handler := MakeRedirectionHandler(mockStorage, zap.NewNop().Sugar())
+
+		req := httptest.NewRequest(http.MethodGet, "/abc123", nil)
+		rctx := chi.NewRouteContext()
+		rctx.URLParams.Add("key", "abc123")
+		req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
+
+		rec := httptest.NewRecorder()
+		handler(rec, req)
+
+		assert.Equal(t, http.StatusGone, rec.Code)
 	})
 }

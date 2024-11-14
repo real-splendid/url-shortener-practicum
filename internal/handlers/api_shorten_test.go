@@ -47,6 +47,20 @@ func TestHandleAPIShorten(t *testing.T) {
 
 		assert.Equal(t, http.StatusUnauthorized, recorder.Code)
 	})
+
+	t.Run("invalid-json", func(t *testing.T) {
+		handler := MakeAPIShortenHandler(storage.NewMemoryStorage(), zap.NewNop().Sugar(), "http://localhost")
+
+		req := httptest.NewRequest(http.MethodPost, "/api/shorten", bytes.NewReader([]byte("invalid json")))
+		mockUserID := "test-user-id"
+		mockSignedCookie := middleware.SignCookie(mockUserID)
+		req.AddCookie(&http.Cookie{Name: "user_id", Value: mockSignedCookie})
+
+		rec := httptest.NewRecorder()
+		handler(rec, req)
+
+		assert.Equal(t, http.StatusBadRequest, rec.Code)
+	})
 }
 
 func BenchmarkHandleAPIShorten(b *testing.B) {

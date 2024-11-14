@@ -75,7 +75,6 @@ func MakeAPIShortenHandler(storage internal.Storage, logger *zap.SugaredLogger, 
 // Принимает запрос HTTP.
 // Возвращает URL и ошибку, если произошла ошибка при чтении или парсинге URL.
 func readURLFromAPIRequestBody(r *http.Request) (string, error) {
-	const maxBodySize = 1024 * 1024
 	limitedReader := io.LimitReader(r.Body, maxBodySize)
 	body, err := io.ReadAll(limitedReader)
 

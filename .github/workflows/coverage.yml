@@ -1,0 +1,30 @@
+name: coverage
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+jobs:
+  coverage:
+    runs-on: ubuntu-latest
+    container: golang:1.22.9
+    permissions:
+      contents: write
+      checks: write
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-go@v3
+
+      - name: generate test coverage
+        run: go test ./... -coverprofile=./cover.out -covermode=atomic
+
+      - name: check test coverage
+        uses: vladopajic/go-test-coverage@v2
+        with:
+          profile: cover.out
+          local-prefix: github.com/real-splendid/url-shortener-practicum
+          threshold-total: 40
+          git-token: ${{ secrets.GITHUB_TOKEN || '' }}
+          git-branch: badges

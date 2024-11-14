@@ -14,6 +14,8 @@ import (
 	"github.com/real-splendid/url-shortener-practicum/internal/middleware"
 )
 
+const maxBodySize = 1024 * 1024
+
 // MakeShortenHandler создает обработчик для сокращения URL.
 // Принимает хранилище, логгер и базовый URL.
 // Возвращает функцию обработчика.
@@ -51,7 +53,6 @@ func makeKey() string {
 }
 
 func readRequestBody(r *http.Request) (string, error) {
-	const maxBodySize = 1024 * 1024
 	limitedReader := io.LimitReader(r.Body, maxBodySize)
 	body, err := io.ReadAll(limitedReader)
 

@@ -7,6 +7,9 @@ test:
 test-race:
 	go test ./internal/... -race -v
 
+test-coverage:
+	go test ./... -coverprofile=./cover.out -covermode=atomic -coverpkg=./...
+
 generate-test-mocks:
 	mockgen -source=internal/contracts.go -destination=mocks/postgres_mock.go -package=mocks Storage
 
