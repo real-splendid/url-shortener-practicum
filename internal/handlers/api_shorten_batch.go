@@ -12,18 +12,25 @@ import (
 	"github.com/real-splendid/url-shortener-practicum/internal/middleware"
 )
 
-type (
-	ShortenBatchReq struct {
-		CorrelationID string `json:"correlation_id"`
-		OriginalURL   string `json:"original_url"`
-	}
+// ShortenBatchReq структура запроса для пакетного сокращения URL.
+type ShortenBatchReq struct {
+	// CorrelationID идентификатор корреляции.
+	CorrelationID string `json:"correlation_id"`
+	// OriginalURL оригинальный URL.
+	OriginalURL string `json:"original_url"`
+}
 
-	ShortenBatchResp struct {
-		CorrelationID string `json:"correlation_id"`
-		ShortURL      string `json:"short_url"`
-	}
-)
+// ShortenBatchResp структура ответа для пакетного сокращения URL.
+type ShortenBatchResp struct {
+	// CorrelationID идентификатор корреляции.
+	CorrelationID string `json:"correlation_id"`
+	// ShortURL сокращенный URL.
+	ShortURL string `json:"short_url"`
+}
 
+// MakeAPIShortenBatchHandler создает обработчик для пакетного сокращения URL через API.
+// Принимает хранилище, логгер и базовый URL.
+// Возвращает функцию обработчика.
 func MakeAPIShortenBatchHandler(storage internal.Storage, logger *zap.SugaredLogger, baseURL string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		userID, ok := middleware.GetUserID(r)

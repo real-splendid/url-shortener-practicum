@@ -1,6 +1,6 @@
 module github.com/real-splendid/url-shortener-practicum
 
-go 1.21.0
+go 1.22.9
 
 require (
 	github.com/go-chi/chi/v5 v5.0.12

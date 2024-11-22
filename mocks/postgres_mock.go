@@ -12,8 +12,9 @@ package mocks
 import (
 	reflect "reflect"
 
-	internal "github.com/real-splendid/url-shortener-practicum/internal"
 	gomock "go.uber.org/mock/gomock"
+
+	internal "github.com/real-splendid/url-shortener-practicum/internal"
 )
 
 // MockStorage is a mock of Storage interface.

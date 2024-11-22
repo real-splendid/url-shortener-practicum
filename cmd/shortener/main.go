@@ -3,6 +3,8 @@ package main
 import (
 	"flag"
 	"os"
+	"runtime"
+	"runtime/pprof"
 
 	"go.uber.org/zap"
 
@@ -11,18 +13,24 @@ import (
 	"github.com/real-splendid/url-shortener-practicum/internal/storage"
 )
 
-var (
-	address         *string
-	baseURL         *string
-	fileStoragePath *string
-	dDSN            *string
-)
+// address указывает адрес, на котором будет запущен сервер.
+var address *string
 
-func init() {
+// baseURL указывает базовый URL для коротких ссылок.
+var baseURL *string
+
+// fileStoragePath указывает путь к файлу для хранения данных (если используется файловое хранилище).
+var fileStoragePath *string
+
+// dDSN указывает DSN для подключения к базе данных PostgreSQL.
+var dDSN *string
+
+func init() { // coverage-ignore
 	address = flag.String("a", ":8080", "server address")
 	baseURL = flag.String("b", "http://localhost:8080", "base url")
 	fileStoragePath = flag.String("f", "/tmp/short-url-db.json", "file to store results")
 	dDSN = flag.String("d", "", "database dsn")
+	memprofile := flag.String("memprofile", "", "write memory profile to file")
 	flag.Parse()
 	if envAddress, ok := os.LookupEnv("SERVER_ADDRESS"); ok {
 		*address = envAddress
@@ -36,9 +44,16 @@ func init() {
 	if envDSN, ok := os.LookupEnv("DATABASE_DSN"); ok {
 		*dDSN = envDSN
 	}
+
+	if *memprofile != "" {
+		f, _ := os.Create(*memprofile)
+		defer f.Close()
+		runtime.GC()
+		pprof.WriteHeapProfile(f)
+	}
 }
 
-func main() {
+func main() { // coverage-ignore
 	rawLogger, _ := zap.NewDevelopment()
 	logger := rawLogger.Sugar()
 	var err error

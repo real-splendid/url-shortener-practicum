@@ -9,6 +9,9 @@ import (
 	"github.com/real-splendid/url-shortener-practicum/internal"
 )
 
+// MakeRedirectionHandler создает обработчик для перенаправления по короткому ключу.
+// Принимает хранилище и логгер.
+// Возвращает функцию обработчика.
 func MakeRedirectionHandler(storage internal.Storage, logger *zap.SugaredLogger) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		key := chi.URLParam(r, "key")

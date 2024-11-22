@@ -14,6 +14,11 @@ import (
 	"github.com/real-splendid/url-shortener-practicum/internal/middleware"
 )
 
+const maxBodySize = 1024 * 1024
+
+// MakeShortenHandler создает обработчик для сокращения URL.
+// Принимает хранилище, логгер и базовый URL.
+// Возвращает функцию обработчика.
 func MakeShortenHandler(storage internal.Storage, logger *zap.SugaredLogger, baseURL string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		userID, ok := middleware.GetUserID(r)
@@ -48,7 +53,9 @@ func makeKey() string {
 }
 
 func readRequestBody(r *http.Request) (string, error) {
-	body, err := io.ReadAll(r.Body)
+	limitedReader := io.LimitReader(r.Body, maxBodySize)
+	body, err := io.ReadAll(limitedReader)
+
 	if err != nil {
 		return "", err
 	}

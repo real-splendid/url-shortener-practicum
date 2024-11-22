@@ -11,14 +11,27 @@ import (
 	"github.com/real-splendid/url-shortener-practicum/internal/middleware"
 )
 
+// app представляет приложение.
 type app struct {
-	router  *chi.Mux
+	// router маршрутизатор приложения.
+	router *chi.Mux
+	// storage хранилище данных.
 	storage internal.Storage
-	logger  *zap.SugaredLogger
+	// logger логгер приложения.
+	logger *zap.SugaredLogger
+	// baseURL базовый URL для коротких ссылок.
 	baseURL string
 }
 
-func NewApp(storage internal.Storage, logger *zap.SugaredLogger, baseURL string, dDSN string) *app {
+// NewApp создает новый экземпляр приложения.
+// Принимает хранилище данных, логгер, базовый URL и DSN базы данных.
+// Возвращает указатель на экземпляр приложения.
+func NewApp(
+	storage internal.Storage,
+	logger *zap.SugaredLogger,
+	baseURL string,
+	dDSN string,
+) *app { // coverage-ignore
 	router := chi.NewRouter()
 	router.Use(middleware.MakeLogMiddleware(logger))
 	router.Use(middleware.MakeGzipMiddleware(logger))
@@ -38,7 +51,10 @@ func NewApp(storage internal.Storage, logger *zap.SugaredLogger, baseURL string,
 	}
 }
 
-func (a *app) Serve(address *string) error {
+// Serve запускает HTTP-сервер.
+// Принимает указатель на строку, содержащую адрес для прослушивания.
+// Возвращает ошибку, если произошла ошибка при запуске сервера.
+func (a *app) Serve(address *string) error { // coverage-ignore
 	defer a.logger.Sync()
 	if err := http.ListenAndServe(*address, a.router); err != nil {
 		a.logger.Error(err)

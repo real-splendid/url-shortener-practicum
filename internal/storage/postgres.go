@@ -1,3 +1,4 @@
+// Package storage предоставляет функциональность для хранения данных.
 package storage
 
 import (
@@ -9,10 +10,14 @@ import (
 	"github.com/real-splendid/url-shortener-practicum/internal"
 )
 
+// postgresStorage реализует хранилище на основе PostgreSQL.
 type postgresStorage struct {
 	db *sql.DB
 }
 
+// NewPostgresStorage создает новое хранилище PostgreSQL.
+// Принимает строку подключения DSN.
+// Возвращает указатель на postgresStorage и ошибку, если произошла ошибка при подключении к базе данных.
 func NewPostgresStorage(dsn string) (*postgresStorage, error) {
 	db, err := sql.Open("postgres", dsn)
 	if err != nil {
@@ -35,10 +40,17 @@ func NewPostgresStorage(dsn string) (*postgresStorage, error) {
 	return &postgresStorage{db: db}, nil
 }
 
+// Close закрывает соединение с базой данных.
+// Возвращает ошибку, если произошла ошибка при закрытии соединения.
 func (s *postgresStorage) Close() error {
 	return s.db.Close()
 }
 
+// Set сохраняет пару ключ-значение в хранилище.
+// Принимает ключ, значение и ID пользователя.
+// Возвращает  пустую строку и nil, если запись прошла успешно.
+// Возвращает существующий ключ и internal.ErrDuplicateKey, если для данного пользователя и оригинального URL уже существует запись.
+// Возвращает пустую строку и ошибку, если произошла ошибка при вставке данных.
 func (s *postgresStorage) Set(key string, value string, userID string) (string, error) {
 	var existingKey string
 	err := s.db.QueryRow("SELECT short_url FROM urls WHERE original_url = $1 AND user_id = $2", value, userID).Scan(&existingKey)
@@ -56,6 +68,11 @@ func (s *postgresStorage) Set(key string, value string, userID string) (string, 
 	return "", nil
 }
 
+// Get возвращает значение по ключу.
+// Принимает ключ.
+// Возвращает значение и nil, если ключ найден и не удален.
+// Возвращает пустую строку и ошибку "key not found", если ключ не найден.
+// Возвращает пустую строку и internal.ErrURLDeleted, если URL был удален.
 func (s *postgresStorage) Get(key string) (string, error) {
 	var originalURL string
 	var isDeleted bool
@@ -72,6 +89,9 @@ func (s *postgresStorage) Get(key string) (string, error) {
 	return originalURL, nil
 }
 
+// GetUserURLs возвращает все URL-адреса, принадлежащие пользователю.
+// Принимает ID пользователя.
+// Возвращает слайс URLPair и ошибку, если произошла ошибка при запросе к базе данных.
 func (s *postgresStorage) GetUserURLs(userID string) ([]internal.URLPair, error) {
 	rows, err := s.db.Query("SELECT short_url, original_url FROM urls WHERE user_id = $1 AND is_deleted = FALSE", userID)
 	if err != nil {
@@ -94,6 +114,9 @@ func (s *postgresStorage) GetUserURLs(userID string) ([]internal.URLPair, error)
 	return urls, nil
 }
 
+// DeleteUserURLs удаляет URL-адреса пользователя по коротким URL.
+// Принимает ID пользователя и слайс коротких URL для удаления.
+// Возвращает ошибку, если произошла ошибка при обновлении данных в базе данных.
 func (s *postgresStorage) DeleteUserURLs(userID string, shortURLs []string) error {
 	tx, err := s.db.Begin()
 	if err != nil {

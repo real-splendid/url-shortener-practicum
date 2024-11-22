@@ -7,6 +7,9 @@ test:
 test-race:
 	go test ./internal/... -race -v
 
+test-coverage:
+	go test ./... -coverprofile=./cover.out -covermode=atomic -coverpkg=./...
+
 generate-test-mocks:
 	mockgen -source=internal/contracts.go -destination=mocks/postgres_mock.go -package=mocks Storage
 
@@ -30,6 +33,9 @@ test-iteration:
 	$(TEST_CMD) -test.run=^TestIteration13$$
 	$(TEST_CMD) -test.run=^TestIteration14$$
 	$(TEST_CMD) -test.run=^TestIteration15$$
+	$(TEST_CMD) -test.run=^TestIteration16$$
+	$(TEST_CMD) -test.run=^TestIteration17$$
+	$(TEST_CMD) -test.run=^TestIteration18$$
 
 up:
 	docker compose up -d
