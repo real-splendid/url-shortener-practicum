@@ -97,7 +97,9 @@ func (s *postgresStorage) GetUserURLs(userID string) ([]internal.URLPair, error)
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() {
+		_ = rows.Close()
+	}()
 
 	var urls []internal.URLPair
 	for rows.Next() {
@@ -122,13 +124,17 @@ func (s *postgresStorage) DeleteUserURLs(userID string, shortURLs []string) erro
 	if err != nil {
 		return err
 	}
-	defer tx.Rollback()
+	defer func() {
+		_ = tx.Rollback()
+	}()
 
 	stmt, err := tx.Prepare("UPDATE urls SET is_deleted = TRUE WHERE user_id = $1 AND short_url = $2")
 	if err != nil {
 		return err
 	}
-	defer stmt.Close()
+	defer func() {
+		_ = stmt.Close()
+	}()
 
 	for _, shortURL := range shortURLs {
 		_, err := stmt.Exec(userID, shortURL)

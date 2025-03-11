@@ -46,6 +46,9 @@ func MakeUserURLsHandler(storage internal.Storage, logger *zap.SugaredLogger, ba
 
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
-		w.Write(jsonResp)
+		_, writeErr := w.Write(jsonResp)
+		if writeErr != nil {
+			logger.Error("failed to write response", writeErr)
+		}
 	}
 }

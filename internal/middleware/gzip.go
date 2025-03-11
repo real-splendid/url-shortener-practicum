@@ -40,7 +40,11 @@ func MakeGzipMiddleware(logger *zap.SugaredLogger) func(http.Handler) http.Handl
 					w.WriteHeader(http.StatusBadRequest)
 					return
 				}
-				defer gz.Close()
+				defer func() {
+					if closeErr := gz.Close(); closeErr != nil {
+						logger.Error("failed to close gzip writer", closeErr)
+					}
+				}()
 				r.Body = gz
 			}
 
@@ -51,10 +55,17 @@ func MakeGzipMiddleware(logger *zap.SugaredLogger) func(http.Handler) http.Handl
 
 			gz, err := gzip.NewWriterLevel(w, gzip.BestSpeed)
 			if err != nil {
-				io.WriteString(w, err.Error())
+				_, writeErr := io.WriteString(w, err.Error())
+				if writeErr != nil {
+					logger.Error("failed to write error message", writeErr)
+				}
 				return
 			}
-			defer gz.Close()
+			defer func() {
+				if closeErr := gz.Close(); closeErr != nil {
+					logger.Error("failed to close gzip writer", closeErr)
+				}
+			}()
 
 			w.Header().Set("Content-Encoding", "gzip")
 			next.ServeHTTP(gzipWriter{ResponseWriter: w, Writer: gz}, r)

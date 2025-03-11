@@ -30,7 +30,11 @@ func TestHandleShorten(t *testing.T) {
 		handler(recorder, request)
 		result := recorder.Result()
 		body, err := io.ReadAll(result.Body)
-		defer result.Body.Close()
+		defer func() {
+			if closeErr := result.Body.Close(); closeErr != nil {
+				t.Errorf("failed to close response body: %v", closeErr)
+			}
+		}()
 
 		assert.Equal(t, http.StatusCreated, result.StatusCode)
 		assert.NoError(t, err)
@@ -54,7 +58,11 @@ func TestHandleShorten(t *testing.T) {
 		handler(recorder, request)
 		result := recorder.Result()
 		body, err := io.ReadAll(result.Body)
-		defer result.Body.Close()
+		defer func() {
+			if closeErr := result.Body.Close(); closeErr != nil {
+				t.Errorf("failed to close response body: %v", closeErr)
+			}
+		}()
 
 		assert.Equal(t, http.StatusConflict, result.StatusCode)
 		assert.NoError(t, err)

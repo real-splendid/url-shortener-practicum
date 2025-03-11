@@ -1,3 +1,4 @@
+// Пакет handlers предоставляет обработчики HTTP-запросов для сервиса сокращения URL.
 package handlers
 
 import (
@@ -46,7 +47,11 @@ func MakeAPIShortenBatchHandler(storage internal.Storage, logger *zap.SugaredLog
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
-		defer r.Body.Close()
+		defer func() {
+			if closeErr := r.Body.Close(); closeErr != nil {
+				logger.Error("failed to close request body", closeErr)
+			}
+		}()
 		err = json.Unmarshal(body, &req)
 		if err != nil {
 			logger.Error(err)
@@ -56,16 +61,16 @@ func MakeAPIShortenBatchHandler(storage internal.Storage, logger *zap.SugaredLog
 
 		var resp []ShortenBatchResp
 		for _, item := range req {
-			if _, err := url.Parse(item.OriginalURL); err != nil {
-				logger.Error(err)
-				http.Error(w, err.Error(), http.StatusBadRequest)
+			if _, parseErr := url.Parse(item.OriginalURL); parseErr != nil {
+				logger.Error(parseErr)
+				http.Error(w, parseErr.Error(), http.StatusBadRequest)
 				return
 			}
 
 			key := internal.MakeKey()
-			if _, err := storage.Set(key, item.OriginalURL, userID); err != nil {
-				logger.Error(err)
-				http.Error(w, err.Error(), http.StatusInternalServerError)
+			if _, setErr := storage.Set(key, item.OriginalURL, userID); setErr != nil {
+				logger.Error(setErr)
+				http.Error(w, setErr.Error(), http.StatusInternalServerError)
 				return
 			}
 
@@ -84,6 +89,9 @@ func MakeAPIShortenBatchHandler(storage internal.Storage, logger *zap.SugaredLog
 
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusCreated)
-		w.Write(jsonResp)
+		_, writeErr := w.Write(jsonResp)
+		if writeErr != nil {
+			logger.Error("failed to write response", writeErr)
+		}
 	}
 }

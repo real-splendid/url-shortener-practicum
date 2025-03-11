@@ -21,7 +21,8 @@ func TestHandleRedirection(t *testing.T) {
 	key := "testtest"
 	userID := "test-user-id"
 	s := storage.NewMemoryStorage()
-	s.Set(key, originalURL, userID)
+	_, err := s.Set(key, originalURL, userID)
+	assert.NoError(t, err)
 	handler := MakeRedirectionHandler(s, zap.NewNop().Sugar())
 	t.Run("redirect", func(t *testing.T) {
 		recorder := httptest.NewRecorder()
@@ -32,7 +33,11 @@ func TestHandleRedirection(t *testing.T) {
 
 		handler(recorder, request)
 		result := recorder.Result()
-		defer result.Body.Close()
+		defer func() {
+			if closeErr := result.Body.Close(); closeErr != nil {
+				t.Errorf("failed to close response body: %v", closeErr)
+			}
+		}()
 
 		assert.Equal(t, http.StatusTemporaryRedirect, result.StatusCode)
 		assert.Equal(t, originalURL, result.Header.Get("Location"))
@@ -43,7 +48,11 @@ func TestHandleRedirection(t *testing.T) {
 
 		handler(recorder, request)
 		result := recorder.Result()
-		defer result.Body.Close()
+		defer func() {
+			if closeErr := result.Body.Close(); closeErr != nil {
+				t.Errorf("failed to close response body: %v", closeErr)
+			}
+		}()
 
 		assert.Equal(t, http.StatusNotFound, result.StatusCode)
 	})

@@ -1,3 +1,4 @@
+// Пакет app предоставляет основную функциональность приложения для сервиса сокращения URL.
 package app
 
 import (
@@ -55,7 +56,11 @@ func NewApp(
 // Принимает указатель на строку, содержащую адрес для прослушивания.
 // Возвращает ошибку, если произошла ошибка при запуске сервера.
 func (a *app) Serve(address *string) error { // coverage-ignore
-	defer a.logger.Sync()
+	defer func() {
+		if err := a.logger.Sync(); err != nil {
+			a.logger.Error("failed to sync logger", err)
+		}
+	}()
 	if err := http.ListenAndServe(*address, a.router); err != nil {
 		a.logger.Error(err)
 		return err

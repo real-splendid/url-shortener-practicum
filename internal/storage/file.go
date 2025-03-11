@@ -53,8 +53,8 @@ func NewFileStorage(path string) (*fileStorage, error) {
 		}
 
 		s.records[record.UUID] = record
-		if len(s.userURLs[record.UserID]) == 0 {
-			s.userURLs[record.UserID] = make([]string, 1)
+		if s.userURLs[record.UserID] == nil {
+			s.userURLs[record.UserID] = []string{}
 		}
 		s.userURLs[record.UserID] = append(s.userURLs[record.UserID], record.UUID)
 	}
@@ -108,8 +108,8 @@ func (s *fileStorage) Set(key string, value string, userID string) (string, erro
 		UserID:      userID,
 		IsDeleted:   false,
 	}
-	if len(s.userURLs[record.UserID]) == 0 {
-		s.userURLs[record.UserID] = make([]string, 1)
+	if s.userURLs[record.UserID] == nil {
+		s.userURLs[record.UserID] = []string{}
 	}
 	s.userURLs[userID] = append(s.userURLs[userID], key)
 
