@@ -24,12 +24,6 @@ const (
 func MakeAuthMiddleware(logger *zap.SugaredLogger) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			// FIXME: do better exceptions
-			if r.URL.Path == "/api/user/urls" {
-				next.ServeHTTP(w, r)
-				return
-			}
-
 			cookie, err := r.Cookie(cookieName)
 			if err != nil || !validateCookie(cookie.Value) {
 				userID := uuid.New().String()

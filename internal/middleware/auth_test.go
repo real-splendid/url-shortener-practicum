@@ -32,7 +32,10 @@ func TestAuthMiddleware(t *testing.T) {
 
 		assert.True(t, handlerCalled)
 
-		cookies := rr.Result().Cookies()
+		resp := rr.Result()
+		defer resp.Body.Close()
+
+		cookies := resp.Cookies()
 		require.NotEmpty(t, cookies)
 		var userIDCookie *http.Cookie
 		for _, cookie := range cookies {
@@ -68,7 +71,10 @@ func TestAuthMiddleware(t *testing.T) {
 
 		assert.True(t, handlerCalled)
 
-		cookies := rr.Result().Cookies()
+		resp := rr.Result()
+		defer resp.Body.Close()
+
+		cookies := resp.Cookies()
 		for _, cookie := range cookies {
 			if cookie.Name == cookieName {
 				t.Error("No new cookie should be set for existing valid user")
@@ -94,7 +100,10 @@ func TestAuthMiddleware(t *testing.T) {
 
 		assert.True(t, handlerCalled)
 
-		cookies := rr.Result().Cookies()
+		resp := rr.Result()
+		defer resp.Body.Close()
+
+		cookies := resp.Cookies()
 		require.NotEmpty(t, cookies)
 		var userIDCookie *http.Cookie
 		for _, cookie := range cookies {
@@ -121,6 +130,9 @@ func TestAuthMiddleware(t *testing.T) {
 		handler.ServeHTTP(rr, req)
 
 		assert.True(t, handlerCalled)
+
+		resp := rr.Result()
+		defer resp.Body.Close()
 	})
 }
 

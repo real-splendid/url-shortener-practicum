@@ -26,6 +26,12 @@ var fileStoragePath *string
 // dDSN указывает DSN для подключения к базе данных PostgreSQL.
 var dDSN *string
 
+var (
+	buildVersion = "N/A"
+	buildDate    = "N/A"
+	buildCommit  = "N/A"
+)
+
 func init() { // coverage-ignore
 	address = flag.String("a", ":8080", "server address")
 	baseURL = flag.String("b", "http://localhost:8080", "base url")
@@ -65,6 +71,10 @@ func init() { // coverage-ignore
 }
 
 func main() { // coverage-ignore
+	fmt.Printf("Build version: %s\n", buildVersion)
+	fmt.Printf("Build date: %s\n", buildDate)
+	fmt.Printf("Build commit: %s\n", buildCommit)
+
 	rawLogger, _ := zap.NewDevelopment()
 	logger := rawLogger.Sugar()
 	var err error
