@@ -1,3 +1,4 @@
+// Пакет handlers предоставляет обработчики HTTP-запросов для сервиса сокращения URL.
 package handlers
 
 import (
@@ -20,7 +21,11 @@ func MakePingHandler(dDSN string, logger *zap.SugaredLogger) http.HandlerFunc {
 			logger.Infof("Failed to connect to the database: %v", err)
 			return
 		}
-		defer db.Close()
+		defer func() {
+			if closeErr := db.Close(); closeErr != nil {
+				logger.Error("failed to close database connection", closeErr)
+			}
+		}()
 
 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		defer cancel()

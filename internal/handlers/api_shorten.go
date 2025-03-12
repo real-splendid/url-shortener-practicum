@@ -1,3 +1,4 @@
+// Пакет handlers предоставляет обработчики HTTP-запросов для сервиса сокращения URL.
 package handlers
 
 import (
@@ -43,19 +44,22 @@ func MakeAPIShortenHandler(storage internal.Storage, logger *zap.SugaredLogger, 
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
-		duplicateKey, err := storage.Set(key, URL, userID)
-		if errors.Is(err, internal.ErrDuplicateKey) {
+		duplicateKey, setErr := storage.Set(key, URL, userID)
+		if errors.Is(setErr, internal.ErrDuplicateKey) {
 			logger.Info("key already exists", duplicateKey)
 			shortURL := baseURL + "/" + duplicateKey
-			jsonResp, err := json.Marshal(ShortenResp{Result: shortURL})
-			if err != nil {
-				logger.Error(err)
+			jsonResp, marshalErr := json.Marshal(ShortenResp{Result: shortURL})
+			if marshalErr != nil {
+				logger.Error(marshalErr)
 				w.WriteHeader(http.StatusInternalServerError)
 				return
 			}
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusConflict)
-			w.Write(jsonResp)
+			_, writeErr := w.Write(jsonResp)
+			if writeErr != nil {
+				logger.Error("failed to write response", writeErr)
+			}
 			return
 		}
 		shortURL := baseURL + "/" + key
@@ -67,7 +71,10 @@ func MakeAPIShortenHandler(storage internal.Storage, logger *zap.SugaredLogger, 
 		}
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusCreated)
-		w.Write(jsonResp)
+		_, writeErr := w.Write(jsonResp)
+		if writeErr != nil {
+			logger.Error("failed to write response", writeErr)
+		}
 	}
 }
 
@@ -82,7 +89,9 @@ func readURLFromAPIRequestBody(r *http.Request) (string, error) {
 		return "", err
 	}
 
-	defer r.Body.Close()
+	defer func() {
+		_ = r.Body.Close()
+	}()
 
 	var req ShortenReq
 	if err = json.Unmarshal(body, &req); err != nil {

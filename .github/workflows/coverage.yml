@@ -9,7 +9,7 @@ on:
 jobs:
   coverage:
     runs-on: ubuntu-latest
-    container: golang:1.22.9
+    container: golang:1.24.1
     permissions:
       contents: write
       checks: write

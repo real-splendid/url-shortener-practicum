@@ -36,7 +36,11 @@ func TestHandleAPIShortenBatch(t *testing.T) {
 		var resp []ShortenBatchResp
 		err = json.Unmarshal(body, &resp)
 		assert.NoError(t, err)
-		defer result.Body.Close()
+		defer func() {
+			if closeErr := result.Body.Close(); closeErr != nil {
+				t.Errorf("failed to close response body: %v", closeErr)
+			}
+		}()
 
 		assert.Equal(t, http.StatusCreated, result.StatusCode)
 		assert.Equal(t, "application/json", result.Header.Get("Content-Type"))
@@ -60,7 +64,11 @@ func TestHandleAPIShortenBatch(t *testing.T) {
 		handler(recorder, req)
 
 		result := recorder.Result()
-		defer result.Body.Close()
+		defer func() {
+			if closeErr := result.Body.Close(); closeErr != nil {
+				t.Errorf("failed to close response body: %v", closeErr)
+			}
+		}()
 
 		assert.Equal(t, http.StatusUnauthorized, result.StatusCode)
 	})

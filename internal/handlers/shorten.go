@@ -39,12 +39,18 @@ func MakeShortenHandler(storage internal.Storage, logger *zap.SugaredLogger, bas
 			logger.Info("key already exists", duplicateKey)
 			shortURL := baseURL + "/" + duplicateKey
 			w.WriteHeader(http.StatusConflict)
-			w.Write([]byte(shortURL))
+			_, writeErr := w.Write([]byte(shortURL))
+			if writeErr != nil {
+				logger.Error("failed to write response", writeErr)
+			}
 			return
 		}
 		shortURL := baseURL + "/" + key
 		w.WriteHeader(http.StatusCreated)
-		w.Write([]byte(shortURL))
+		_, writeErr := w.Write([]byte(shortURL))
+		if writeErr != nil {
+			logger.Error("failed to write response", writeErr)
+		}
 	}
 }
 
@@ -59,7 +65,9 @@ func readRequestBody(r *http.Request) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	defer r.Body.Close()
+	defer func() {
+		_ = r.Body.Close()
+	}()
 	if _, err = url.Parse(string(body)); err != nil {
 		return "", err
 	}

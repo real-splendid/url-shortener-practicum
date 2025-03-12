@@ -1,3 +1,4 @@
+// Пакет handlers предоставляет обработчики HTTP-запросов для сервиса сокращения URL.
 package handlers
 
 import (
@@ -22,24 +23,28 @@ func MakeDeleteUserURLsHandler(storage internal.Storage, logger *zap.SugaredLogg
 			return
 		}
 
-		body, err := io.ReadAll(r.Body)
-		if err != nil {
-			logger.Error(err)
+		body, readErr := io.ReadAll(r.Body)
+		if readErr != nil {
+			logger.Error(readErr)
 			http.Error(w, "Bad Request", http.StatusBadRequest)
 			return
 		}
-		defer r.Body.Close()
+		defer func() {
+			if closeErr := r.Body.Close(); closeErr != nil {
+				logger.Error("failed to close request body", closeErr)
+			}
+		}()
 
 		var shortURLs []string
-		if err := json.Unmarshal(body, &shortURLs); err != nil {
-			logger.Error(err)
+		if unmarshalErr := json.Unmarshal(body, &shortURLs); unmarshalErr != nil {
+			logger.Error(unmarshalErr)
 			http.Error(w, "Bad Request", http.StatusBadRequest)
 			return
 		}
 
 		go func() {
-			if err := storage.DeleteUserURLs(userID, shortURLs); err != nil {
-				logger.Error(err)
+			if deleteErr := storage.DeleteUserURLs(userID, shortURLs); deleteErr != nil {
+				logger.Error(deleteErr)
 			}
 		}()
 

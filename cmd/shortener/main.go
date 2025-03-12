@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"os"
 	"runtime"
 	"runtime/pprof"
@@ -25,6 +26,12 @@ var fileStoragePath *string
 // dDSN указывает DSN для подключения к базе данных PostgreSQL.
 var dDSN *string
 
+var (
+	buildVersion = "N/A"
+	buildDate    = "N/A"
+	buildCommit  = "N/A"
+)
+
 func init() { // coverage-ignore
 	address = flag.String("a", ":8080", "server address")
 	baseURL = flag.String("b", "http://localhost:8080", "base url")
@@ -46,14 +53,28 @@ func init() { // coverage-ignore
 	}
 
 	if *memprofile != "" {
-		f, _ := os.Create(*memprofile)
-		defer f.Close()
+		f, err := os.Create(*memprofile)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "could not create memory profile: %v\n", err)
+			os.Exit(1)
+		}
+		defer func() {
+			if err := f.Close(); err != nil {
+				fmt.Fprintf(os.Stderr, "could not close memory profile: %v\n", err)
+			}
+		}()
 		runtime.GC()
-		pprof.WriteHeapProfile(f)
+		if err := pprof.WriteHeapProfile(f); err != nil {
+			fmt.Fprintf(os.Stderr, "could not write memory profile: %v\n", err)
+		}
 	}
 }
 
 func main() { // coverage-ignore
+	fmt.Printf("Build version: %s\n", buildVersion)
+	fmt.Printf("Build date: %s\n", buildDate)
+	fmt.Printf("Build commit: %s\n", buildCommit)
+
 	rawLogger, _ := zap.NewDevelopment()
 	logger := rawLogger.Sugar()
 	var err error
@@ -71,8 +92,14 @@ func main() { // coverage-ignore
 	} else {
 		s = storage.NewMemoryStorage()
 	}
-	defer s.Close()
+	defer func() {
+		if err := s.Close(); err != nil {
+			logger.Errorf("Failed to close storage: %v", err)
+		}
+	}()
 
 	app := app.NewApp(s, logger, *baseURL, *dDSN)
-	app.Serve(address)
+	if err := app.Serve(address); err != nil {
+		logger.Fatalf("Failed to serve application: %v", err)
+	}
 }

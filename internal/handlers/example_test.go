@@ -50,7 +50,11 @@ func ExampleMakeRedirectionHandler() {
 	originalURL := "https://ya.ru"
 	key := "testtest"
 	userID := "test-user-id"
-	testStorage.Set(key, originalURL, userID)
+	_, err := testStorage.Set(key, originalURL, userID)
+	if err != nil {
+		fmt.Printf("Error setting URL: %v\n", err)
+		return
+	}
 
 	// Создаем логгер
 	logger, _ := zap.NewDevelopment()
